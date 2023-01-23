@@ -4,8 +4,7 @@ from typing import List
 
 import PySimpleGUI as gui
 
-from spiel import Spiel120, DiplomaAnswers, DiplomaType
-from spiel.Diploma import DiplomaFRAME, DiplomaFrameRepeatMin
+from logic import parse_diploma, eval_spiel
 
 diplomas = []
 
@@ -30,37 +29,12 @@ def create_spiel_frame() -> List[List]:
 def create_new_window() -> gui.Window:
     meta_layout = [[gui.Text("Spieler Name: "), gui.Input("", key="spieler-name")]]
     spiel_frame = create_spiel_frame()
-    layout = [[gui.Frame("Infos", layout=meta_layout, key="frame-meta")],
-              [gui.Frame("Spiel", layout=spiel_frame, key="frame-spiel")], [gui.B("AUSWERTEN", key="AUSWERTEN")]]
-    return gui.Window("Neuer Spielbericht", layout=layout, size=(920, 550), resizable=True,
+    layout = [[gui.Column([[gui.Frame("Infos", layout=meta_layout, key="frame-meta")],
+              [gui.Frame("Spiel", layout=spiel_frame, key="frame-spiel")], [gui.B("AUSWERTEN", key="AUSWERTEN")]]),
+              gui.Frame("Diplome", key="frame-diplome", layout=[[gui.Text("",key="diplome-feld")]])]]
+    return gui.Window("Neuer Spielbericht", layout=layout, size=(1220, 550), resizable=True,
                       auto_size_text=True,
                       auto_size_buttons=True, font="14")
-
-
-def eval_spiel(values: dict, window: gui.Window):
-    global diplomas
-    spiel = Spiel120()
-    spiel.init(values)
-    result = DiplomaAnswers()
-    for diploma in diplomas:
-        result_temp = spiel.analyze(diploma)
-        result = result + result_temp
-    result.print()
-    for answer in result.answers:
-        feld: gui.Spin = window[f"wurf-{answer.satz}-{answer.bereich}-{answer.bereich_wurf}"]
-
-
-def parse_diploma(diploma: dict):
-    dtype = DiplomaType.value_of(diploma["type"])
-    params: dict = diploma["type-parameters"]
-    title: str = diploma["name"]
-    match dtype:
-        case DiplomaType.FRAME:
-            return DiplomaFRAME(dtype, title, int(params["frame-size"]), int(params["value"]))
-        case DiplomaType.FRAME_REPEAT_MIN:
-            return DiplomaFrameRepeatMin(dtype, title, int(params["frame-size"]), int(params["number"]))
-        case _:
-            raise TypeError()
 
 
 def run_new_window(window: gui.Window):
@@ -74,10 +48,11 @@ def run_new_window(window: gui.Window):
             diplomas.append(parse_diploma(diploma))
         except:
             pass
+    # main loop
     while True:
         event, values = window.read()
         if event == "AUSWERTEN":
-            eval_spiel(values, window)
+            eval_spiel(values, window, diplomas)
         else:
             return
 
