@@ -1,0 +1,59 @@
+[
+  {
+    "name": "3er-Diplom",
+    "description": "In 3 Wurf 26",
+    "type": "FRAME",
+    "type-parameters": {
+      "frame-size": 3,
+      "value": 26
+    }
+  },
+  {
+    "name": "5er-Diplom",
+    "description": "In 5 Wurf 40",
+    "type": "FRAME",
+    "type-parameters": {
+      "frame-size": 5,
+      "value": 40
+    }
+  },
+  {
+    "name": "10er-Diplom",
+    "description": "In 10 Wurf 70",
+    "type": "FRAME",
+    "type-parameters": {
+      "frame-size": 10,
+      "value": 70
+    }
+  },
+  {
+    "name": "X-Fach-Hirte",
+    "description": "Mindestens fünf Sieben hintereinander",
+    "type": "FRAME-SEQUENZ-MIN",
+    "type-parameters": {
+      "frame-size": 5,
+      "number": 7
+    }
+  },
+  {
+    "name": "Kegelgott",
+    "description": "7-2 kann jeder 2-7 nicht",
+    "type": "FRAME-SEQUENZ-R",
+    "type-parameters": {
+      "frame-size": 2,
+      "sequenz": [
+        2,
+        7
+      ]
+    }
+  },
+  {
+    "name": "120 Wurf pure Konzentration",
+    "description": "Kein Fehlwurf im Spiel",
+    "type": "RESULT-EXACT",
+    "type-parameters": {
+      "count": 0,
+      "counting": "0"
+    }
+  }
+]
