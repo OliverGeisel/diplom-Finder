@@ -5,7 +5,7 @@ from typing import List
 import PySimpleGUI as gui
 
 from spiel import Spiel120, DiplomaAnswers, DiplomaType
-from spiel.Diploma import DiplomaFRAME
+from spiel.Diploma import DiplomaFRAME, DiplomaFrameRepeatMin
 
 diplomas = []
 
@@ -32,9 +32,9 @@ def create_new_window() -> gui.Window:
     spiel_frame = create_spiel_frame()
     layout = [[gui.Frame("Infos", layout=meta_layout, key="frame-meta")],
               [gui.Frame("Spiel", layout=spiel_frame, key="frame-spiel")], [gui.B("AUSWERTEN", key="AUSWERTEN")]]
-    return gui.Window("Neuer Spielbericht", layout=layout, size=(750, 400), resizable=True,
+    return gui.Window("Neuer Spielbericht", layout=layout, size=(920, 550), resizable=True,
                       auto_size_text=True,
-                      auto_size_buttons=True)
+                      auto_size_buttons=True, font="14")
 
 
 def eval_spiel(values: dict, window: gui.Window):
@@ -53,9 +53,12 @@ def eval_spiel(values: dict, window: gui.Window):
 def parse_diploma(diploma: dict):
     dtype = DiplomaType.value_of(diploma["type"])
     params: dict = diploma["type-parameters"]
+    title: str = diploma["name"]
     match dtype:
         case DiplomaType.FRAME:
-            return DiplomaFRAME(dtype, int(params["frame-size"]), int(params["value"]))
+            return DiplomaFRAME(dtype, title, int(params["frame-size"]), int(params["value"]))
+        case DiplomaType.FRAME_REPEAT_MIN:
+            return DiplomaFrameRepeatMin(dtype, title, int(params["frame-size"]), int(params["number"]))
         case _:
             raise TypeError()
 
@@ -67,8 +70,10 @@ def run_new_window(window: gui.Window):
         diploma_json = json.loads(diploma_file.read())
     for diploma in diploma_json:
         # todo enable all types
-        if diploma["type"] == "FRAME":
+        try:
             diplomas.append(parse_diploma(diploma))
+        except:
+            pass
     while True:
         event, values = window.read()
         if event == "AUSWERTEN":
@@ -90,6 +95,7 @@ def run_start(window: gui.Window):
         if event == "NEU":
             new_window = create_new_window()
             command = run_new_window
+            window.close()
         elif event == "INFO":
             gui.Popup("Hier ist leider nix besonderes! 🤨🫡")
             continue

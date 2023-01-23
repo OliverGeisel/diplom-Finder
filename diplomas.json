@@ -29,7 +29,7 @@
   {
     "name": "X-Fach-Hirte",
     "description": "Mindestens fünf Sieben hintereinander",
-    "type": "FRAME-SEQUENZ-MIN",
+    "type": "FRAME-REPEAT-MIN",
     "type-parameters": {
       "frame-size": 5,
       "number": 7
@@ -38,7 +38,7 @@
   {
     "name": "Kegelgott",
     "description": "7-2 kann jeder 2-7 nicht",
-    "type": "FRAME-SEQUENZ-R",
+    "type": "FRAME-SEQUENCE-R",
     "type-parameters": {
       "frame-size": 2,
       "sequenz": [

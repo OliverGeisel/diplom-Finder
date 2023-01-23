@@ -1,7 +1,7 @@
 import re
 
 from spiel import Satz
-from spiel.Diploma import Diploma, DiplomaAnswers
+from spiel.Diploma import Diploma, DiplomaAnswers, DiplomaSatz
 
 
 class Spiel120:
@@ -33,36 +33,39 @@ class Spiel120:
 
     def init(self, values: dict):
         # 1. Satz
-        wurf_voll = [(min(int(value),9) if value != "" else 0) for key, value in values.items() if
+        wurf_voll = [(min(int(value), 9) if value != "" else 0) for key, value in values.items() if
                      re.match(r"wurf-1-volle-\d\d?", key)]
-        wurf_raeumer = [(min(int(value),9) if value != "" else 0) for key, value in values.items() if
+        wurf_raeumer = [(min(int(value), 9) if value != "" else 0) for key, value in values.items() if
                         re.match(r"wurf-1-räumer-\d\d?", key)]
         self.satz1.volle = wurf_voll
         self.satz1.abräumer = wurf_raeumer
         # 2. Satz
-        wurf_voll = [(min(int(value),9) if value != "" else 0) for key, value in values.items() if
+        wurf_voll = [(min(int(value), 9) if value != "" else 0) for key, value in values.items() if
                      re.match(r"wurf-2-volle-\d\d?", key)]
-        wurf_raeumer = [(min(int(value),9) if value != "" else 0) for key, value in values.items() if
+        wurf_raeumer = [(min(int(value), 9) if value != "" else 0) for key, value in values.items() if
                         re.match(r"wurf-2-räumer-\d\d?", key)]
         self.satz2.volle = wurf_voll
         self.satz2.abräumer = wurf_raeumer
         # 3. Satz
-        wurf_voll = [(min(int(value),9) if value != "" else 0) for key, value in values.items() if
+        wurf_voll = [(min(int(value), 9) if value != "" else 0) for key, value in values.items() if
                      re.match(r"wurf-3-volle-\d\d?", key)]
-        wurf_raeumer = [(min(int(value),9) if value != "" else 0) for key, value in values.items() if
+        wurf_raeumer = [(min(int(value), 9) if value != "" else 0) for key, value in values.items() if
                         re.match(r"wurf-3-räumer-\d\d?", key)]
         self.satz3.volle = wurf_voll
         self.satz3.abräumer = wurf_raeumer
         # 4. Satz
-        wurf_voll = [(min(int(value),9) if value != "" else 0) for key, value in values.items() if
+        wurf_voll = [(min(int(value), 9) if value != "" else 0) for key, value in values.items() if
                      re.match(r"wurf-4-volle-\d\d?", key)]
-        wurf_raeumer = [(min(int(value),9) if value != "" else 0) for key, value in values.items() if
+        wurf_raeumer = [(min(int(value), 9) if value != "" else 0) for key, value in values.items() if
                         re.match(r"wurf-4-räumer-\d\d?", key)]
         self.satz4.volle = wurf_voll
         self.satz4.abräumer = wurf_raeumer
 
     def analyze(self, diploma: Diploma):
         answer = DiplomaAnswers()
-        for i in [self.satz1, self.satz2, self.satz3, self.satz4]:
-            answer = answer + diploma.check(i)
+        if isinstance(diploma, DiplomaSatz):
+            for i in [self.satz1, self.satz2, self.satz3, self.satz4]:
+                answer = answer + diploma.check(i)
+        else:
+            answer = diploma.check(self)
         return answer
