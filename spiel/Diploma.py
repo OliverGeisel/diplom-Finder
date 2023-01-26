@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from __future__ import annotations
 
 import enum
@@ -80,6 +82,14 @@ class Diploma(ABC):
     def __init__(self, diploma_type: DiplomaType, title: str):
         self.type: DiplomaType = diploma_type
         self.title = title
+
+    def __eq__(self, other) -> bool:
+        if other is None or not isinstance(other, Diploma):
+            return False
+        return self.title == other.title and self.type == other.type
+
+    def __hash__(self) -> int:
+        return super().__hash__() + hash(self.title) + hash(self.type)
 
     def check(self, element) -> DiplomaAnswers:
         raise NotImplementedError("Class has no Implementation")

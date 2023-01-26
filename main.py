@@ -1,4 +1,4 @@
-# This is a sample Python script.
+# -*- coding: utf8 -*
 import gui
 
 

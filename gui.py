@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import json
 import pathlib
 from typing import List
@@ -8,7 +10,7 @@ import csv_parse
 from logic import parse_diploma, eval_spiel, eval_spiel_from_input
 from spiel import Spiel120
 
-diplomas = []
+diplomas = set()
 
 
 def create_spiel_frame() -> List[List]:
@@ -42,15 +44,7 @@ def create_new_window() -> gui.Window:
 
 def run_new_window(window: gui.Window):
     global diplomas
-    diploma_path = pathlib.Path("diplomas.json")
-    with diploma_path.open("r") as diploma_file:
-        diploma_json = json.loads(diploma_file.read())
-    for diploma in diploma_json:
-        # todo enable all types
-        try:
-            diplomas.append(parse_diploma(diploma))
-        except:
-            pass
+    load_diplomas(diplomas)
     # main loop
     while True:
         event, values = window.read()
@@ -58,6 +52,18 @@ def run_new_window(window: gui.Window):
             eval_spiel_from_input(values, window, diplomas)
         else:
             return
+
+
+def load_diplomas(diplomas: set):
+    diploma_path = pathlib.Path("diplomas.json")
+    with diploma_path.open("r") as diploma_file:
+        diploma_json = json.loads(diploma_file.read())
+    for diploma in diploma_json:
+        # todo enable all types
+        try:
+            diplomas.add(parse_diploma(diploma))
+        except:
+            pass
 
 
 def create_start_window() -> gui.Window:
@@ -76,29 +82,24 @@ def display_spiel(spiel: Spiel120, window: gui.Window):
 
 def create_csv_window() -> gui.Window:
     global diplomas
-    diploma_path = pathlib.Path("diplomas.json")
-    with diploma_path.open("r") as diploma_file:
-        diploma_json = json.loads(diploma_file.read())
-    for diploma in diploma_json:
-        # todo enable all types
-        try:
-            diplomas.append(parse_diploma(diploma))
-        except:
-            pass
-    window = gui.Window("Spielbericht aus CSV", layout=[[create_spiel_frame()], [
-        gui.Frame("Diplome", key="frame-diplome", layout=[[gui.Text("", key="diplome-feld")]])]])
+    load_diplomas(diplomas)
+    window = gui.Window("Spielbericht aus CSV",
+                        layout=[[create_spiel_frame()], [gui.B("Aktualisieren", key="AUSWERTEN")], [
+                            gui.Frame("Diplome", key="frame-diplome",
+                                      layout=[[gui.Text("KEINE DIPLOME!", key="diplome-feld")]])]])
     window.finalize()
     return window
 
 
 def run_csv_window(window: gui.Window):
-    spiel = csv_parse.parse_csv(pathlib.Path("werte.csv"))
+    path = gui.PopupGetFile("Welches File soll gewählt werden?")
+    spiel = csv_parse.parse_csv(pathlib.Path(path))
     display_spiel(spiel, window)
     eval_spiel(spiel, window, diplomas)
     while True:
         event, values = window.read()
         if event == "AUSWERTEN":
-            eval_spiel(values, window, diplomas)
+            eval_spiel_from_input(values, window, diplomas)
         else:
             return
 

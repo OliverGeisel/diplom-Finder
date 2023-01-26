@@ -1,4 +1,4 @@
-[
+﻿[
   {
     "name": "3er-Diplom",
     "description": "In 3 Wurf 26",
@@ -45,6 +45,14 @@
         2,
         7
       ]
+    }
+  },{
+    "name": "10er in Räumer",
+    "description": "45 Holz in 10 Wurf",
+    "type": "FRAME-R",
+    "type-parameters": {
+      "frame-size": 10,
+      "value": 45
     }
   },
   {
