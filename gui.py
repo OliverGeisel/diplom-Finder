@@ -34,6 +34,14 @@ def create_spiel_frame() -> List[List]:
 
 
 def create_new_window() -> gui.Window:
+    menu_def = [
+        ['&File', ['&Open     Ctrl-O', '&Save       Ctrl-S', '&Properties', 'E&xit']],
+        ['&Edit', ['&Paste', ['Special', 'Normal', ], 'Undo', 'Options::this_is_a_menu_key'], ],
+        ['&Toolbar', ['---', 'Command &1', 'Command &2',
+                      '---', 'Command &3', 'Command &4']],
+        ['&Help', ['&About...']]
+    ]
+    [gui.Menubar(menu_def)]
     meta_layout = [[gui.Text("Spieler Name: "), gui.Input("", key="spieler-name")]]
     spiel_frame = create_spiel_frame()
     layout = [[gui.Column([[gui.Frame("Infos", layout=meta_layout, key="frame-meta")],
@@ -119,8 +127,8 @@ def run_csv_window(window: gui.Window):
 def run_start(window: gui.Window):
     while True:
         event, values = window.read()
-        command = None
-        new_window = None
+        command: callable
+        new_window: gui.Window
         if event == "NEU":
             new_window = create_new_window()
             command = run_new_window
