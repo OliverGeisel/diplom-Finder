@@ -4,7 +4,24 @@ from spiel import DiplomaType, Spiel120, DiplomaAnswers
 from spiel.Diploma import DiplomaFRAME, DiplomaFrameRepeatMin
 
 
-def eval_spiel(values: dict, window: gui.Window, diplomas):
+def eval_spiel(spiel:Spiel120,window:gui.Window,diplomas):
+    result = DiplomaAnswers()
+    for diploma in diplomas:
+        result_temp = spiel.analyze(diploma)
+        result = result + result_temp
+    result.print()
+    for answer in result.answers:
+        feld: gui.Spin = window[f"wurf-{answer.satz}-{answer.bereich}-{answer.bereich_wurf}"]
+    diplome_layout = list()
+    text = ""
+    for answer in result.answers:
+        text += f"Diplom: {answer.title} in Satz {answer.satz} und Wurf {answer.absolut_wurf}\n"
+    window["diplome-feld"].update(value=text)
+    # todo clean by rerun or disable
+    # window.extend_layout(window["frame-diplome"], diplome_layout)
+
+
+def eval_spiel_from_input(values: dict, window: gui.Window, diplomas):
     spiel = Spiel120()
     spiel.init(values)
     result = DiplomaAnswers()
