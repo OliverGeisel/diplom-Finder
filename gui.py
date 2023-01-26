@@ -17,6 +17,9 @@ def create_spiel_frame() -> List[List]:
     back = list()
     for i in range(1, 5):
         satz_layout = list()
+        number_lane = [gui.T("Wurf"), gui.HSeparator()]
+        number_lane.extend([gui.T(f"{x}", size=(3,)) for x in range(1, 16)])
+        satz_layout.append(number_lane)
         # volle
         volle_lane = [gui.T("Volle"), gui.HSeparator()]
         for wurf in range(1, 16):
@@ -35,11 +38,12 @@ def create_new_window() -> gui.Window:
     spiel_frame = create_spiel_frame()
     layout = [[gui.Column([[gui.Frame("Infos", layout=meta_layout, key="frame-meta")],
                            [gui.Frame("Spiel", layout=spiel_frame, key="frame-spiel")],
-                           [gui.B("AUSWERTEN", key="AUSWERTEN")]]),
+                           [gui.B("AUSWERTEN", key="AUSWERTEN")]], expand_x=True, expand_y=True, size=(1000, 500),
+                          scrollable=True, vertical_scroll_only=True),
                gui.Frame("Diplome", key="frame-diplome", layout=[[gui.Text("", key="diplome-feld")]])]]
     return gui.Window("Neuer Spielbericht", layout=layout, size=(1220, 550), resizable=True,
                       auto_size_text=True,
-                      auto_size_buttons=True, font="14")
+                      auto_size_buttons=True, font="14", scaling=1.5)
 
 
 def run_new_window(window: gui.Window):
@@ -56,7 +60,7 @@ def run_new_window(window: gui.Window):
 
 def load_diplomas(diplomas: set):
     diploma_path = pathlib.Path("diplomas.json")
-    with diploma_path.open("r") as diploma_file:
+    with diploma_path.open("r", encoding="utf-8-sig") as diploma_file:
         diploma_json = json.loads(diploma_file.read())
     for diploma in diploma_json:
         # todo enable all types
@@ -93,7 +97,15 @@ def create_csv_window() -> gui.Window:
 
 def run_csv_window(window: gui.Window):
     path = gui.PopupGetFile("Welches File soll gewählt werden?")
-    spiel = csv_parse.parse_csv(pathlib.Path(path))
+    file = pathlib.Path(path)
+    if file is None:
+        return
+    while not (file.is_file() or file.suffix == ".csv"):
+        if file is None:
+            return
+        path = gui.PopupGetFile("Welches File soll gewählt werden?")
+        file = pathlib.Path(path)
+    spiel = csv_parse.parse_csv(file)
     display_spiel(spiel, window)
     eval_spiel(spiel, window, diplomas)
     while True:
@@ -118,7 +130,11 @@ def run_start(window: gui.Window):
             command = run_csv_window
             window.close()
         elif event == "INFO":
-            gui.Popup("Hier ist leider nix besonderes! 🤨🫡")
+            gui.Popup(f"""
+Hier ist leider nix besonderes! 🤨🫡
+Version 1.0!
+©️Oliver Geisel
+""")
             continue
         else:
             return
