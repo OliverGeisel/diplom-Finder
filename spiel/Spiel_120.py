@@ -61,8 +61,8 @@ class Spiel120:
         self.satz4.volle = wurf_voll
         self.satz4.abräumer = wurf_raeumer
 
-    def analyze(self, diploma: Diploma):
-        answer = DiplomaAnswers()
+    def analyze(self, diploma: Diploma, name: str = ""):
+        answer = DiplomaAnswers(name)
         if isinstance(diploma, DiplomaSatz):
             for i in [self.satz1, self.satz2, self.satz3, self.satz4]:
                 answer = answer + diploma.check(i)

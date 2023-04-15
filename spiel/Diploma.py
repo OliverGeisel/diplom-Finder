@@ -30,13 +30,14 @@ class DiplomaAnswer:
         self.bereich_wurf = absolut_wurf - 15 if absolut_wurf > 15 else absolut_wurf
         self.title = title
 
-    def print(self):
-        print(f"Satz:{self.satz}-{self.absolut_wurf}-{self.title}")
+    def print(self, name: str = ""):
+        print(f"{name}{' ' if name is not '' else ''}Satz:{self.satz}-{self.absolut_wurf}-{self.title}")
 
 
 class DiplomaAnswers:
-    def __init__(self):
+    def __init__(self, name: str = ""):
         self.answers: List[DiplomaAnswer] = list()
+        self.name = name
 
     def add(self, diploma_answer: DiplomaAnswer):
         self.answers.append(diploma_answer)
@@ -44,7 +45,7 @@ class DiplomaAnswers:
     def __add__(self, other):
         if not isinstance(other, DiplomaAnswers):
             raise Exception("Type Missmatch")
-        back = DiplomaAnswers()
+        back = DiplomaAnswers(self.name)
         for i in self.answers:
             back.add(i)
         for i in other.answers:
@@ -53,7 +54,7 @@ class DiplomaAnswers:
 
     def print(self):
         for i in self.answers:
-            i.print()
+            i.print(self.name)
 
 
 class DiplomaType(enum.IntEnum):

@@ -6,28 +6,42 @@ from spiel import DiplomaType, Spiel120, DiplomaAnswers
 from spiel.Diploma import DiplomaFRAME, DiplomaFrameRepeatMin, DiplomaFrameR, Diploma
 
 
-def eval_spiel(spiel: Spiel120, window: gui.Window, diplomas):
-    result = DiplomaAnswers()
+def eval_spiel(spiel: Spiel120, window: gui.Window, diplomas: set, name: str = ""):
+    result = DiplomaAnswers(name)
     for diploma in diplomas:
-        result_temp = spiel.analyze(diploma)
+        result_temp = spiel.analyze(diploma, name)
         result = result + result_temp
     result.print()
-    for answer in result.answers:
-        feld: gui.Spin = window[f"wurf-{answer.satz}-{answer.bereich}-{answer.bereich_wurf}"]
+    # for answer in result.answers:
+    #     feld: gui.Spin = window[f"wurf-{answer.satz}-{answer.bereich}-{answer.bereich_wurf}"]
     diplome_layout = list()
-    text = ""
+    text = window["diplome-feld"].get()
+    text = "" if "KEINE DIPLOME!" == text else text
     for answer in result.answers:
-        text += f"Diplom: {answer.title} in Satz {answer.satz} und Wurf {answer.absolut_wurf}\n"
+        text += f"{result.name} - Diplom: {answer.title} in Satz {answer.satz} und Wurf {answer.absolut_wurf}\n"
     text = "KEINE DIPLOME!" if text == "" else text
     window["diplome-feld"].update(value=text)
     # todo clean by rerun or disable
     # window.extend_layout(window["frame-diplome"], diplome_layout)
 
 
-def eval_spiel_from_input(values: dict, window: gui.Window, diplomas):
+def eval_spiel_from_input(values: dict, window: gui.Window, diplomas, name: str = ""):
+    """
+
+    :param name:
+    :type name:
+    :param values:
+    :type values:
+    :param window:
+    :type window:
+    :param diplomas:
+    :type diplomas:
+    :return:
+    :rtype:
+    """
     spiel = Spiel120()
     spiel.init(values)
-    eval_spiel(spiel, window, diplomas)
+    eval_spiel(spiel, window, diplomas, name)
 
 
 def parse_diploma(diploma: dict) -> Diploma:

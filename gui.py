@@ -10,6 +10,8 @@ import csv_parse
 from logic import parse_diploma, eval_spiel, eval_spiel_from_input
 from spiel import Spiel120
 
+with pathlib.Path("settings.json").open() as settings_file:
+    settings = json.loads(settings_file.read())
 diplomas = set()
 
 
@@ -80,6 +82,7 @@ def load_diplomas(diplomas: set):
 
 def create_start_window() -> gui.Window:
     layout = [[gui.Button("Neues Spiel analysieren", key="NEU")], [gui.B("Aus CSV", key="CSV")],
+              [gui.B("Team CSV", key="TEAM")],
               [gui.Button("Info", key="INFO")]]
     return gui.Window("Diplom-Finder", layout=layout, size=(300, 200))
 
@@ -124,6 +127,34 @@ def run_csv_window(window: gui.Window):
             return
 
 
+def create_team_window() -> gui.Window:
+    global diplomas
+    load_diplomas(diplomas)
+    window = gui.Window("Team auswerten - CSV",
+                        layout=[[gui.FolderBrowse("Ordner", key="folder", initial_folder=settings["start_path"]),
+                                 gui.B("Auswerten", key="AUSWERTEN")], [
+                                    gui.Frame("Diplome", key="frame-diplome",
+                                              layout=[[gui.Text("KEINE DIPLOME!", key="diplome-feld")]])]])
+    window.finalize()
+    return window
+
+
+def run_team_window(window: gui.Window):
+    while True:
+        event, values = window.read()
+        if event == "AUSWERTEN":
+            folder = pathlib.Path(values["folder"])
+            players = [x.name.replace(",", " ") for x in folder.iterdir()]
+            player_folders = [x for x in folder.iterdir()]
+            for index, folder in enumerate(player_folders):
+                name = players[index]
+                game = folder.joinpath("werte.csv")
+                spiel = csv_parse.parse_csv(game)
+                eval_spiel(spiel, window, diplomas, name)
+        else:
+            return
+
+
 def run_start(window: gui.Window):
     while True:
         event, values = window.read()
@@ -136,6 +167,10 @@ def run_start(window: gui.Window):
         elif event == "CSV":
             new_window = create_csv_window()
             command = run_csv_window
+            window.close()
+        elif event == "TEAM":
+            new_window = create_team_window()
+            command = run_team_window
             window.close()
         elif event == "INFO":
             gui.Popup(f"""
