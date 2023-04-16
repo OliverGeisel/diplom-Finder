@@ -63,19 +63,19 @@ def run_new_window(window: gui.Window):
     while True:
         event, values = window.read()
         if event == "AUSWERTEN":
-            eval_spiel_from_input(values, window, diplomas)
+            eval_spiel_from_input(values, window, diplomas, values["spieler-name"])
         else:
             return
 
 
-def load_diplomas(diplomas: set):
+def load_diplomas(diplomas_set: set):
     diploma_path = pathlib.Path("diplomas.json")
     with diploma_path.open("r", encoding="utf-8-sig") as diploma_file:
         diploma_json = json.loads(diploma_file.read())
     for diploma in diploma_json:
         # todo enable all types
         try:
-            diplomas.add(parse_diploma(diploma))
+            diplomas_set.add(parse_diploma(diploma))
         except:
             pass
 
@@ -175,7 +175,7 @@ def run_start(window: gui.Window):
         elif event == "INFO":
             gui.Popup(f"""
 Hier ist leider nix besonderes! 🤨🫡
-Version 1.0!
+Version 1.1!
 ©️Oliver Geisel
 """)
             continue

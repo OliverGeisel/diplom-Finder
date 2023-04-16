@@ -31,7 +31,7 @@ class DiplomaAnswer:
         self.title = title
 
     def print(self, name: str = ""):
-        print(f"{name}{' ' if name is not '' else ''}Satz:{self.satz}-{self.absolut_wurf}-{self.title}")
+        print(f"{name}{' ' if name != '' else ''}Satz:{self.satz}-{self.absolut_wurf}-{self.title}")
 
 
 class DiplomaAnswers:
