@@ -25,11 +25,11 @@ def create_spiel_frame() -> List[List]:
         # volle
         volle_lane = [gui.T("Volle"), gui.HSeparator()]
         for wurf in range(1, 16):
-            volle_lane.append(gui.Spin(values=[i for i in range(11)], key=f"wurf-{i}-volle-{wurf}", size=(2, 1)))
+            volle_lane.append(gui.Spin(values=[v for v in range(10)], key=f"wurf-{i}-volle-{wurf}", size=(2, 1)))
         satz_layout.append(volle_lane)
         räumer_lane = [gui.T("Räumer"), gui.HSeparator()]
         for wurf in range(1, 16):
-            räumer_lane.append(gui.Spin(values=[i for i in range(11)], key=f"wurf-{i}-räumer-{wurf}", size=(2, 1)))
+            räumer_lane.append(gui.Spin(values=[v for v in range(10)], key=f"wurf-{i}-räumer-{wurf}", size=(2, 1)))
         satz_layout.append(räumer_lane)
         back.append([gui.Frame(f"Satz {i}", key=f"frame-satz-{i}", layout=satz_layout, expand_x=True, expand_y=True)])
     return back
@@ -73,10 +73,9 @@ def load_diplomas(diplomas_set: set):
     with diploma_path.open("r", encoding="utf-8-sig") as diploma_file:
         diploma_json = json.loads(diploma_file.read())
     for diploma in diploma_json:
-        # todo enable all types
         try:
             diplomas_set.add(parse_diploma(diploma))
-        except:
+        except TypeError:
             pass
 
 
@@ -98,10 +97,11 @@ def display_spiel(spiel: Spiel120, window: gui.Window):
 def create_csv_window() -> gui.Window:
     global diplomas
     load_diplomas(diplomas)
-    window = gui.Window("Spielbericht aus CSV",
+    window = gui.Window("Spielbericht aus CSV", resizable=True,
                         layout=[[create_spiel_frame()], [gui.B("Aktualisieren", key="AUSWERTEN")], [
-                            gui.Frame("Diplome", key="frame-diplome",
-                                      layout=[[gui.Text("KEINE DIPLOME!", key="diplome-feld")]])]])
+                            gui.Frame("Diplome", key="frame-diplome", expand_x=True, expand_y=True,
+                                      layout=[[gui.Text("Bisher KEINE DIPLOME!", key="diplome-feld")]])
+                        ]])
     window.finalize()
     return window
 
@@ -122,6 +122,7 @@ def run_csv_window(window: gui.Window):
     while True:
         event, values = window.read()
         if event == "AUSWERTEN":
+            window["diplome-feld"].update("")
             eval_spiel_from_input(values, window, diplomas)
         else:
             return
@@ -130,11 +131,16 @@ def run_csv_window(window: gui.Window):
 def create_team_window() -> gui.Window:
     global diplomas
     load_diplomas(diplomas)
-    window = gui.Window("Team auswerten - CSV",
-                        layout=[[gui.FolderBrowse("Ordner", key="folder", initial_folder=settings["start_path"]),
-                                 gui.B("Auswerten", key="AUSWERTEN")], [
-                                    gui.Frame("Diplome", key="frame-diplome",
-                                              layout=[[gui.Text("KEINE DIPLOME!", key="diplome-feld")]])]])
+    layout = [[gui.FolderBrowse("Ordner", key="folder", initial_folder=settings["start_path"]),
+               gui.B("Auswerten", key="AUSWERTEN"), gui.B("Leeren", key="LEEREN")],
+              [gui.Frame("Diplome", key="frame-diplome", expand_y=True, expand_x=True,
+                         layout=[[
+                             gui.Col(scrollable=True, size=(400, 50), expand_x=True, expand_y=True,
+                                     vertical_scroll_only=True,
+                                     layout=[[gui.Text("Bisher KEINE DIPLOME!", key="diplome-feld")]])]])]
+              ]
+    window = gui.Window("Team auswerten - CSV", resizable=True,
+                        layout=layout)
     window.finalize()
     return window
 
@@ -144,13 +150,21 @@ def run_team_window(window: gui.Window):
         event, values = window.read()
         if event == "AUSWERTEN":
             folder = pathlib.Path(values["folder"])
+            if not folder.exists() or pathlib.Path() == folder:
+                gui.popup_error("Es gab keinen gültigen Ordner bitte neu wählen!", title="Fehler - Fehlender Ordner!")
+                continue
             players = [x.name.replace(",", " ") for x in folder.iterdir()]
             player_folders = [x for x in folder.iterdir()]
             for index, folder in enumerate(player_folders):
                 name = players[index]
-                game = folder.joinpath("werte.csv")
-                spiel = csv_parse.parse_csv(game)
+                game_file_path: pathlib.Path = folder.joinpath("werte.csv")
+                if not game_file_path.exists():
+                    print(f"Die Datei {game_file_path} existiert nicht!")
+                    continue
+                spiel = csv_parse.parse_csv(game_file_path)
                 eval_spiel(spiel, window, diplomas, name)
+        elif event == "LEEREN":
+            window["diplome-feld"].update("Bisher KEINE DIPLOME!")
         else:
             return
 
