@@ -107,8 +107,23 @@ class DiplomaFrameSequenz(DiplomaSatz):
 class DiplomaFrameSequenzR(DiplomaSatz):
     """Diplom, das eine genaue Abfolge von Würfen benötigt. Dieses Diplom ist nur in Räumer gültig"""
 
+    def __init__(self, diploma_type: DiplomaType, title: str, size, sequenz, strict: bool):
+        super().__init__(diploma_type, title)
+        self.size = size
+        self.sequenz = sequenz
+        self.strict = strict
+
     def check(self, element: Satz) -> DiplomaAnswers:
-        raise NotImplementedError("Nicht Implementiert")
+        würfe = element.abräumer
+        back = DiplomaAnswers()
+        for i in range(0, len(würfe) - self.size):
+            folge_davor = würfe[0:max(i - 1, 1)]
+            if ((self.strict and (sum(folge_davor) % 9) == 0 and würfe[i:i + self.size] == self.sequenz)
+                    or (not self.strict and würfe[i:i + self.size] == self.sequenz)):
+                absolut_wurf = 16 + i
+                bereich = RÄUMER
+                back.add(DiplomaAnswer(element.number, absolut_wurf, bereich, self.title, self.sequenz))
+        return back
 
 
 class DiplomaFrameR(DiplomaSatz):
@@ -152,6 +167,8 @@ class DiplomaFrameRepeatMin(DiplomaSatz):
         würfe = element.volle + element.abräumer
         back = DiplomaAnswers()
         max_index = len(würfe) - 1
+        if max_index < self.size - 1:
+            return back
         i = 0
         while i < 30 - self.size:
             # check if number is the selected
