@@ -3,19 +3,49 @@
 import PySimpleGUI as gui
 
 from spiel import DiplomaType, Spiel120, DiplomaAnswers
-from spiel.Diploma import DiplomaFrame, DiplomaFrameRepeatMin, DiplomaFrameR, Diploma, DiplomaSpiel, DiplomaResultExact
+from spiel.Diploma import DiplomaFrame, DiplomaFrameRepeatMin, DiplomaFrameR, Diploma, DiplomaSpiel, DiplomaResultExact, \
+    DiplomaFrameSequenzR
 
 
-def eval_spiel(spiel: Spiel120, window: gui.Window, diplomas: set, name: str = ""):
+def eval_spiel_einzel(spiel: Spiel120, diplomas: set, name: str = "") -> DiplomaAnswers:
+    """
+    Evaluate a Spiel120 and diplomas and return the results.
+    :param spiel: Spiel zum auswerten
+    :type spiel: Spiel120
+    :param diplomas: Diplome zum auswerten
+    :type diplomas: set
+    :param name: Name des Spielers
+    :type name:  str
+    :return: Ergebnisse in einer DiplomaAnswers
+    :rtype: DiplomaAnswers
+    """
     result = DiplomaAnswers(name)
     for diploma in diplomas:
-        if isinstance(diploma, DiplomaSpiel):
+        if isinstance(diploma, DiplomaSpiel):  # check if diploma is a Spiel diploma
             result_temp = diploma.check(spiel)
-            result = result + result_temp
-        else:
+            result += result_temp
+        else:  # check if diploma is a normal diploma
             for satz in spiel.get_alle_sätze():
                 result_temp = diploma.check(satz)
-                result = result + result_temp
+                result += result_temp
+    return result
+
+
+def eval_spiel_print_in_window(spiel: Spiel120, window: gui.Window, diplomas: set, name: str = ""):
+    """
+    Evaluate a Spiel120 and diplomas and print the results to the window.
+    :param spiel: Spiel zum auswerten
+    :type spiel:
+    :param window: Fenster zum Ausgeben
+    :type window:
+    :param diplomas: Diplome zum auswerten
+    :type diplomas:
+    :param name: Name des Spielers
+    :type name:
+    :return:
+    :rtype:
+    """
+    result = eval_spiel_einzel(spiel, diplomas, name)
     result.print()
     # for answer in result.answers:
     #     feld: gui.Spin = window[f"wurf-{answer.satz}-{answer.bereich}-{answer.bereich_wurf}"]
@@ -48,7 +78,7 @@ def eval_spiel_from_input(values: dict, window: gui.Window, diplomas, name: str 
     """
     spiel = Spiel120()
     spiel.init(values)
-    eval_spiel(spiel, window, diplomas, name)
+    eval_spiel_print_in_window(spiel, window, diplomas, name)
 
 
 def parse_diploma(diploma: dict) -> Diploma:
@@ -73,5 +103,7 @@ def parse_diploma(diploma: dict) -> Diploma:
             return DiplomaFrameR(dtype, title, int(params["frame-size"]), int(params["value"]))
         case DiplomaType.RESULT_EXACT:
             return DiplomaResultExact(dtype, title, params["count"], params["counting"], params["field"])
+        case DiplomaType.FRAME_SEQUENCE_R:
+            return DiplomaFrameSequenzR(dtype, title, int(params["frame-size"]), params["sequence"], params["strict"])
         case _:
             raise TypeError()

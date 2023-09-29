@@ -41,7 +41,7 @@
     "type": "FRAME-SEQUENCE-R",
     "type-parameters": {
       "frame-size": 2,
-      "sequenz": [
+      "sequence": [
         2,
         7
       ],
