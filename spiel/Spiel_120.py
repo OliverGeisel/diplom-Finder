@@ -35,9 +35,12 @@ class Spiel(ABC):
         alles = self.get_alle()
         return alles.count(number)
 
+    def is_valid(self):
+        raise NotImplementedError("Class has no Implementation")
+
 
 class Spiel120(Spiel):
-    def get_alle_sätze(self) -> list:
+    def get_alle_sätze(self) -> list[Satz]:
         return [self.satz1, self.satz2, self.satz3, self.satz4]
 
     def __init__(self):
@@ -132,3 +135,5 @@ class Spiel120(Spiel):
         self.satz4.volle = wurf_voll
         self.satz4.abräumer = wurf_raeumer
 
+    def is_valid(self) -> bool:
+        return len([satz for satz in self.get_alle_sätze() if satz.is_valid()]) == 4
