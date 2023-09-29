@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas
 
 from spiel import Spiel120, Satz
+from spiel.DiplomaBig import DiplomaBig
 
 
 def parse_csv(path: Path) -> Spiel120:
@@ -28,3 +29,15 @@ def parse_csv(path: Path) -> Spiel120:
     satz.abräumer = [x for x in würfe[105:120]]
     spiel.satz4 = satz
     return spiel
+
+
+def export_to_csv(data: dict[str, list[DiplomaBig]], file_name: str):
+    with Path(f"csv/{file_name}.csv", index=False).open("w", encoding="UTF-8") as output:
+        output.write("Name;Datum;Diplom;Satz;Absolut-Wurf;Bereich;Folge\n")
+        for key, value in data.items():
+            name = key.replace(" ", "_").replace(",", " ")
+            for diploma in value:
+                for answer in diploma.diplomas.answers:
+                    output.write(
+                        f"{name};{diploma.date};{answer.title};{answer.satz};{answer.absolut_wurf};{answer.bereich};" +
+                        f"{str(answer.folge).replace(' ', '').replace(',', '-').removesuffix(']').removeprefix('[')}\n")
