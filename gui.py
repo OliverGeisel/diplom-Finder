@@ -240,6 +240,7 @@ def auswerten_all(pattern: str, folder: pathlib.Path):
     res = sorted(order.items(), key=lambda x: x[1], reverse=True)
     for i in res:
         print(i)
+    # export_docx(list(diplome_pro_spieler.keys())[0], list(diplome_pro_spieler.values())[0][0])
 
 
 def run_complete_window(window: gui.Window):
