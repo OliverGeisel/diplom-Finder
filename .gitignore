@@ -1,0 +1,7 @@
+write the ignores for python
+
+/docs
+/csv
+/.idea
+
+*.docx
