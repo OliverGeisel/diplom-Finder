@@ -7,12 +7,9 @@ from abc import ABC
 from typing import Self
 
 from .DiplomaAnswer import DiplomaAnswers, DiplomaAnswer, DiplomaAnswerSpiel
+from .Hit import Hit, VOLLE, RÄUMER
 from .Satz import Satz
 from .Spiel_120 import Spiel
-
-VOLLE = "volle"
-RÄUMER = "räumer"
-ALLES = "alles"
 
 
 class DiplomaType(enum.IntEnum):
@@ -42,36 +39,32 @@ class DiplomaType(enum.IntEnum):
                 return None
 
 
-class Diploma(ABC):
+class Diploma(Hit):
 
-    def __init__(self, diploma_type: DiplomaType, title: str):
+    def __init__(self, diploma_type: DiplomaType, name: str):
+        super().__init__(name, diploma_type)
         self.type: DiplomaType = diploma_type
-        self.title = title
-
-    def __eq__(self, other) -> bool:
-        if other is None or not isinstance(other, Diploma):
-            return False
-        return self.title == other.title and self.type == other.type
-
-    def __hash__(self) -> int:
-        return super().__hash__() + hash(self.title) + hash(self.type)
-
-    def check(self, element) -> DiplomaAnswers:
-        raise NotImplementedError("Class has no Implementation")
 
 
 class DiplomaSpiel(Diploma, ABC):
+    """
+    Ein Diplom, das auf ein gesamtes Spiel angewendet wird. Es werden also Gesamtholz oder ähnliches ausgewertet.
+    """
+
     def check(self, element: Spiel) -> DiplomaAnswers:
         raise NotImplementedError("Class has no Implementation")
 
 
 class DiplomaSatz(Diploma, ABC):
+    """
+    Ein Diplom, das auf einen Satz angewendet wird. Es werden also nur die Würfe in einem Satz ausgewertet.
+    """
 
     def check(self, element: Satz) -> DiplomaAnswers:
         raise NotImplementedError("Class has no Implementation")
 
 
-class DiplomaFrame(DiplomaSatz):
+class DiplomaFrameValue(DiplomaSatz):
     """ Ein Frame-Diplom ist ein Diplom, das eine Summe in einer bestimmten Anzahl von Würfen erreicht wird.
     Dabei gibt die size, die Anzahl der Würfe und value den Wert, der mindestens erreicht werden muss.
     Beispiel: size=3; value = 26
@@ -79,36 +72,56 @@ class DiplomaFrame(DiplomaSatz):
     ▶️ 9,9,9
     """
 
-    def __init__(self, diploma_type: DiplomaType, title: str, size: int, value: int):
-        super().__init__(diploma_type, title)
-        self.size = size
+    def __init__(self, diploma_type: DiplomaType, name: str, size: int, value: int, greater_equal: bool = True):
+        super().__init__(diploma_type, name)
+        self.frame_size = size
         self.value = value
+        self.greater_equal = greater_equal
 
     def check(self, satz: Satz) -> DiplomaAnswers:
         würfe = satz.volle + satz.abräumer
         back = DiplomaAnswers()
-        for i in range(len(würfe) - self.size):
-            folge = würfe[i:i + self.size]
-            if sum(folge) >= self.value:
+        for i in range(len(würfe) - self.frame_size):
+            folge = würfe[i:i + self.frame_size]
+            sum_folge = sum(folge)
+            if (self.greater_equal and sum_folge >= self.value) or (not self.greater_equal and sum_folge == self.value):
                 absolut_wurf = i + 1
                 bereich = VOLLE if absolut_wurf <= 15 else RÄUMER
-                back.add(DiplomaAnswer(satz.number, absolut_wurf, bereich, self.title, folge))
+                back.add(DiplomaAnswer(satz.number, absolut_wurf, bereich, self.name, folge))
         return back
 
 
 class DiplomaFrameSequenz(DiplomaSatz):
     """Diplom, das eine genaue Abfolge von Würfen benötigt.
+    Beispiel: size = 3; sequenz = [9,9,8]
+    ▶️ |9,9,8|,9
+    ❌ 9,8,9,9
     """
 
-    def check(self, element: Satz) -> DiplomaAnswers:
-        raise NotImplementedError("Nicht Implementiert")
+    def __init__(self, diploma_type: DiplomaType, name: str, size, sequenz: list[int]):
+        super().__init__(diploma_type, name)
+        self.frame_size = size
+        self.sequenz = sequenz
+
+    def check(self, satz: Satz) -> DiplomaAnswers:
+        würfe = satz.volle + satz.abräumer
+        back = DiplomaAnswers()
+        for i in range(0, len(würfe) - self.frame_size):
+            folge_davor = würfe[0:max(i - 1, 1)]
+            if (((sum(folge_davor) % 9) == 0 and würfe[i:i + self.frame_size] == self.sequenz)
+                    or würfe[i:i + self.frame_size] == self.sequenz):
+                absolut_wurf = 1 + i
+                bereich = RÄUMER if absolut_wurf > 15 else VOLLE
+                back.add(DiplomaAnswer(satz.number, absolut_wurf, bereich, self.name, self.sequenz))
+
+        return back
 
 
 class DiplomaFrameSequenzR(DiplomaSatz):
     """Diplom, das eine genaue Abfolge von Würfen benötigt. Dieses Diplom ist nur in Räumer gültig"""
 
-    def __init__(self, diploma_type: DiplomaType, title: str, size, sequenz, strict: bool):
-        super().__init__(diploma_type, title)
+    def __init__(self, diploma_type: DiplomaType, name: str, size, sequenz, strict: bool):
+        super().__init__(diploma_type, name)
         self.size = size
         self.sequenz = sequenz
         self.strict = strict
@@ -122,31 +135,31 @@ class DiplomaFrameSequenzR(DiplomaSatz):
                     or (not self.strict and würfe[i:i + self.size] == self.sequenz)):
                 absolut_wurf = 16 + i
                 bereich = RÄUMER
-                back.add(DiplomaAnswer(element.number, absolut_wurf, bereich, self.title, self.sequenz))
+                back.add(DiplomaAnswer(element.number, absolut_wurf, bereich, self.name, self.sequenz))
         return back
 
 
-class DiplomaFrameR(DiplomaSatz):
+class DiplomaFrameValueR(DiplomaSatz):
     """
-    Ein Frame-Diplom, das aber nur in Räumern gilt. Sonst gilt alle was für ein normales Frame gilt.
+    Ein Frame-Diplom, das aber nur in Räumern gilt. Sonst gilt alle was für ein normales Frame-Value gilt.
     Siehe DiplomaFrame
 
     """
 
-    def __init__(self, diploma_type: DiplomaType, title: str, size: int, value: int):
-        super().__init__(diploma_type, title)
+    def __init__(self, diploma_type: DiplomaType, name: str, size: int, value: int):
+        super().__init__(diploma_type, name)
         self.size = size
         self.value = value
 
-    def check(self, element: Satz) -> DiplomaAnswers:
-        würfe = element.abräumer
+    def check(self, satz: Satz) -> DiplomaAnswers:
+        würfe = satz.abräumer
         back = DiplomaAnswers()
         for i in range(len(würfe) - self.size):
             folge = würfe[i:i + self.size]
             if sum(folge) >= self.value:
-                absolut_wurf = i + 1
+                absolut_wurf = i + 16
                 bereich = RÄUMER
-                back.add(DiplomaAnswer(element.number, absolut_wurf, bereich, self.title, folge))
+                back.add(DiplomaAnswer(satz.number, absolut_wurf, bereich, self.name, folge))
         return back
 
 
@@ -158,8 +171,8 @@ class DiplomaFrameRepeatMin(DiplomaSatz):
     ▶️ 7,7,7
     """
 
-    def __init__(self, diploma_type: DiplomaType, title: str, size: int, number: int):
-        super().__init__(diploma_type, title)
+    def __init__(self, diploma_type: DiplomaType, name: str, size: int, number: int):
+        super().__init__(diploma_type, name)
         self.size = size
         self.number = number
 
@@ -182,7 +195,7 @@ class DiplomaFrameRepeatMin(DiplomaSatz):
                 if count >= self.size:
                     absolut_wurf = i + 1
                     bereich = VOLLE if absolut_wurf < 16 else RÄUMER
-                    back.add(DiplomaAnswer(element.number, absolut_wurf, bereich=bereich, title=self.title,
+                    back.add(DiplomaAnswer(element.number, absolut_wurf, bereich=bereich, name=self.name,
                                            folge=[self.number] * j))
                 i += j
             i += 1
@@ -206,8 +219,8 @@ class DiplomaResultExact(DiplomaSpiel):
     Es darf keinen Fehlwurf geben.
     """
 
-    def __init__(self, diploma_type: DiplomaType, title: str, count: int, counting: str, field: str):
-        super().__init__(diploma_type, title)
+    def __init__(self, diploma_type: DiplomaType, name: str, count: int, counting: str, field: str):
+        super().__init__(diploma_type, name)
         self.count = count
         self.counting = counting
         self.field = field
@@ -217,17 +230,17 @@ class DiplomaResultExact(DiplomaSpiel):
         match self.field:
             case "VOLLE":
                 if spiel.get_volle() == self.count:
-                    back.add(DiplomaAnswerSpiel(self.title))
+                    back.add(DiplomaAnswerSpiel(self.name))
             case "RÄUMER":
                 if spiel.get_räumer() == self.count:
-                    back.add(DiplomaAnswerSpiel(self.title))
+                    back.add(DiplomaAnswerSpiel(self.name))
             case "ALLES":
                 if spiel.get_sum() == self.count:
-                    back.add(DiplomaAnswerSpiel(self.title))
+                    back.add(DiplomaAnswerSpiel(self.name))
             case "FEHLER":
                 if spiel.get_fehlwürfe() == 0:
-                    back.add(DiplomaAnswerSpiel(self.title))
+                    back.add(DiplomaAnswerSpiel(self.name))
             case "VOLLE-ZAHL":
                 if spiel.get_anzahl_holz(int(self.counting)) == self.count:
-                    back.add(DiplomaAnswerSpiel(self.title))
+                    back.add(DiplomaAnswerSpiel(self.name))
         return back

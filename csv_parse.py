@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas
 
 from spiel import Spiel120, Satz
-from spiel.DiplomaBig import DiplomaBig
+from spiel.PlayerDayCollection import NegativePlayerDayCollection, DiplomaPlayerDayCollection
 
 
 def parse_csv(path: Path) -> Spiel120:
@@ -31,13 +31,19 @@ def parse_csv(path: Path) -> Spiel120:
     return spiel
 
 
-def export_to_csv(data: dict[str, list[DiplomaBig]], file_name: str):
+def export_to_csv(data: dict[str, tuple[list[DiplomaPlayerDayCollection], list[NegativePlayerDayCollection]]],
+                  file_name: str):
     with Path(f"csv/{file_name}.csv", index=False).open("w", encoding="UTF-8") as output:
-        output.write("Name;Datum;Diplom;Satz;Absolut-Wurf;Bereich;Folge\n")
+        output.write("Name;Datum;Ergebnis-Name;Satz;Absolut-Wurf;Bereich;Typ;Folge\n")
         for key, value in data.items():
             name = key.replace(" ", "_").replace(",", " ")
-            for diploma in value:
-                for answer in diploma.diplomas.answers:
+            for diploma in value[0]:
+                for answer in diploma.answers.answers:
                     output.write(
-                        f"{name};{diploma.date};{answer.title};{answer.satz};{answer.absolut_wurf};{answer.bereich};" +
+                        f"{name};{diploma.date};{answer.name};{answer.satz};{answer.absolut_wurf};{answer.bereich};DIPLOMA;" +
+                        f"{str(answer.folge).replace(' ', '').replace(',', '-').removesuffix(']').removeprefix('[')}\n")
+            for negative in value[1]:
+                for answer in negative.answers.answers:
+                    output.write(
+                        f"{name};{negative.date};{answer.name};{answer.satz};{answer.absolut_wurf};{answer.bereich};NEGATIVE;" +
                         f"{str(answer.folge).replace(' ', '').replace(',', '-').removesuffix(']').removeprefix('[')}\n")

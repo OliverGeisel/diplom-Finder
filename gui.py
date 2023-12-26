@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import logging
 import pathlib
 from datetime import datetime
 from typing import List
@@ -8,13 +9,14 @@ from typing import List
 import PySimpleGUI as gui
 
 import csv_parse
-from logic import parse_diploma, eval_spiel_print_in_window, eval_spiel_from_input, eval_spiel_einzel
+from logic import parse_diploma, eval_spiel_print_in_window, eval_spiel_from_input, eval_spiel_einzel, parse_negative
 from spiel import Spiel120
-from spiel.DiplomaBig import DiplomaBig
+from spiel.PlayerDayCollection import DiplomaPlayerDayCollection, NegativePlayerDayCollection
 
 with pathlib.Path("settings.json").open() as settings_file:
     settings = json.loads(settings_file.read())
 DIPLOMAS = set()
+NEGATIVES = set()
 
 
 def create_spiel_frame() -> List[List]:
@@ -84,7 +86,18 @@ def load_diplomas(diplomas_set: set):
         try:
             diplomas_set.add(parse_diploma(diploma))
         except TypeError:
-            pass
+            logging.error(f"Error while parsing diploma: {diploma}")
+
+
+def load_negative(negative_set: set):
+    negative_path = pathlib.Path("negative.json")
+    with negative_path.open("r", encoding="utf-8-sig") as negative_file:
+        negative_json = json.loads(negative_file.read())
+    for negative in negative_json:
+        try:
+            negative_set.add(parse_negative(negative))
+        except TypeError:
+            logging.error(f"Error while parsing negative: {negative}")
 
 
 def create_start_window() -> gui.Window:
@@ -182,15 +195,16 @@ def create_complete_window() -> gui.Window:
                 tooltip="Hier ist der Name der Mannschaft zum Auswerten. Der angegebene String wird geprüft, ob er in der Mannschaft enthaltene ist.",
                 key="team-pattern")],
         [gui.FolderBrowse("Ordner", key="folder", initial_folder=settings["start_path"])],
+        [gui.Text("Nieten/Strafen mit auswerten?"), gui.Checkbox("", key="negative", default=False)],
         [gui.Button("Auswerten", key="AUSWERTEN")]
     ]
     return gui.Window("Komplettauswertung", layout=layout)
-    pass
 
 
-def auswerten_all(pattern: str, folder: pathlib.Path):
+def find_all_orga(pattern: str, folder: pathlib.Path, find_negative: bool = False):
     date_format = "%d.%m.%Y"
-    diplome_pro_spieler: dict[str, list[DiplomaBig]] = dict()
+    results_per_spieler: dict[str, tuple[list[DiplomaPlayerDayCollection], list[NegativePlayerDayCollection]]] = dict()
+
     pattern_clean = pattern.upper().strip()
     if pattern_clean is None or pattern_clean in ["", " "] or len(pattern_clean) < 3:
         gui.popup_error("Es gab keinen gültigen Pattern bitte neu wählen!", title="Fehler - Fehlender Pattern!")
@@ -206,41 +220,58 @@ def auswerten_all(pattern: str, folder: pathlib.Path):
         except ValueError as e:
             print("Error:", e)
             continue
-        for game in date.iterdir():  # check each game at the date
-            if not game.is_dir():
-                continue
-            for team in game.iterdir():
-                if not team.is_dir() or team.name == "Backup-Daten" or pattern_clean not in team.name.upper():
-                    continue
-                for player in team.iterdir():
-                    if not player.is_dir():
-                        continue
-                    game_file_path: pathlib.Path = player.joinpath("werte.csv")
-                    if not game_file_path.exists():
-                        print(f"Die Datei {game_file_path} existiert nicht!")
-                        continue
-                    spiel = csv_parse.parse_csv(game_file_path)
-                    if not spiel.is_valid():
-                        continue
-                    spieler = player.name
-                    diplome = eval_spiel_einzel(spiel, DIPLOMAS, spieler)
-                    if diplome.is_leer():
-                        continue
-                    if spieler not in diplome_pro_spieler.keys():
-                        diplome_pro_spieler[spieler] = list()
-                    diplome_pro_spieler[spieler].append(DiplomaBig(parsed_date, team.name, diplome))
-    csv_parse.export_to_csv(diplome_pro_spieler, "komplett")
+        evaluate_day(date, results_per_spieler, parsed_date, pattern_clean, find_negative)
+    csv_parse.export_to_csv(results_per_spieler, "komplett")
     gui.popup_ok("Die Auswertung ist abgeschlossen!", title="Auswertung abgeschlossen!")
     order = dict()
-    for key, value in diplome_pro_spieler.items():
-        i = 0
-        for diploma in value:
-            i += diploma.get_diplome_anzahl()
-        order[key] = i
-    res = sorted(order.items(), key=lambda x: x[1], reverse=True)
-    for i in res:
-        print(i)
-    # export_docx(list(diplome_pro_spieler.keys())[0], list(diplome_pro_spieler.values())[0][0])
+    for key, value in results_per_spieler.items():
+        diplomas_count = 0
+        negatives_count = 0
+        for diploma in value[0]:
+            diplomas_count += diploma.get_anzahl()
+        for negative in value[1]:
+            negatives_count += negative.get_anzahl()
+        order[key] = [diplomas_count, negatives_count]
+    res = sorted(order.items(), key=lambda x: x[1][0] + x[1][1], reverse=True)
+    for diplomas in res:
+        print(diplomas)
+    # export_docx(list(results_per_spieler.keys())[0], list(results_per_spieler.values())[0][0])
+
+
+def evaluate_day(date: pathlib.Path, diplome_pro_spieler: dict[
+    str, tuple[list[DiplomaPlayerDayCollection], list[NegativePlayerDayCollection]]], parsed_date, pattern_clean,
+                 find_negative: bool = False):
+    for game in date.iterdir():  # check each game at the day
+        if not game.is_dir():
+            continue
+        for team in game.iterdir():  # check teams per game
+            if not team.is_dir() or team.name == "Backup-Daten" or pattern_clean not in team.name.upper():
+                continue
+            evaluate_players_in_team(parsed_date, team, diplome_pro_spieler, find_negative)
+
+
+def evaluate_players_in_team(parsed_date, team: pathlib.Path, results_per_player: dict[str, tuple],
+                             find_negative: bool = False):
+    for player in team.iterdir():
+        if not player.is_dir():
+            continue
+        game_file_path: pathlib.Path = player.joinpath("werte.csv")
+        if not game_file_path.exists():
+            print(f"Die Datei {game_file_path} existiert nicht!")
+            continue
+        spiel = csv_parse.parse_csv(game_file_path)
+        if not spiel.is_valid():
+            continue
+        spieler = player.name
+        diplome, find_negative = eval_spiel_einzel(spiel, DIPLOMAS, spieler, find_negative, NEGATIVES)
+        if diplome.is_leer() and find_negative.is_leer():
+            continue
+        if spieler not in results_per_player.keys():
+            list_diplome: list[DiplomaPlayerDayCollection] = list()
+            list_negative: list[NegativePlayerDayCollection] = list()
+            results_per_player[spieler] = tuple([list_diplome, list_negative])
+        results_per_player[spieler][0].append(DiplomaPlayerDayCollection(parsed_date, team.name, diplome))
+        results_per_player[spieler][1].append(NegativePlayerDayCollection(parsed_date, team.name, find_negative))
 
 
 def run_complete_window(window: gui.Window):
@@ -248,7 +279,7 @@ def run_complete_window(window: gui.Window):
         event, values = window.read()
         if event == "AUSWERTEN":
             pattern: str = values["team-pattern"]
-            auswerten_all(pattern, values["folder"])
+            find_all_orga(pattern, values["folder"], values["negative"])
         else:
             return
 
@@ -256,6 +287,7 @@ def run_complete_window(window: gui.Window):
 def run_start(window: gui.Window):
     global DIPLOMAS
     load_diplomas(DIPLOMAS)
+    load_negative(NEGATIVES)
     while True:
         event, values = window.read()
         command: callable

@@ -4,13 +4,13 @@ from datetime import datetime
 import docx
 import pandas
 
-from spiel.DiplomaBig import DiplomaBig
+from spiel.PlayerDayCollection import DiplomaPlayerDayCollection
 
 
-def export_docx(filename, diplomas: DiplomaBig):
+def export_docx(filename, diplomas: DiplomaPlayerDayCollection):
     name = diplomas.get_full_name()
     date = str(diplomas.date.strftime("%d.%m.%Y"))
-    for diploma in diplomas.diplomas.answers:
+    for diploma in diplomas.answers.answers:
         sequence = sequenz_string_from_list(diploma.folge, diploma.bereich == "räumer")
         write_document(name, date, sequence, filename)
 
@@ -59,26 +59,24 @@ def write_document(name, date, sequence, base_file_name: str = None, directory: 
 
 
 def export_csv_to_docx(csv_file, base_file_name: str = None, directory: str = "docs"):
-    data = pandas.read_csv(csv_file)
+    data = pandas.read_csv(csv_file, sep=";", encoding="UTF-8", header=True)
 
     directory_d = pathlib.Path(directory if directory is not None else ".")
     if not directory_d.exists():
         directory_d.mkdir()
 
-    with open(csv_file, "r", encoding="UTF-8") as csv:
-        lines = csv.readlines()
-
-    for line in lines[1:]:
-        columns = line.split(";")
-        name = columns[0].replace(",", " ")
+    for columns in data.columns:
+        if columns["Typ"] == "NEGATIVE":
+            continue
+        name = columns["Name"].replace(",", " ")
         vorname = name.split(" ")[1]
         nachname = name.split(" ")[0]
         full_name = f"{vorname} {nachname}"
 
-        sequenz_list = [int(x) for x in columns[6].strip().split("-")]
-        abräumer = "Räumer" in columns[2].strip()
+        sequenz_list = [int(x) for x in columns["Folge"].strip().split("-")]
+        abräumer = "Räumer" in columns["Bereich"].strip()
         sequenz = sequenz_string_from_list(sequenz_list, abräumer)
 
-        date = datetime.strptime(columns[1], "%Y-%m-%d").date().strftime("%d.%m.%Y")
+        date = datetime.strptime(columns["Datum"], "%Y-%m-%d").date().strftime("%d.%m.%Y")
 
         write_document(full_name, date, sequenz, base_file_name, directory)

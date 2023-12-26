@@ -1,0 +1,12 @@
+[
+  {
+    "name": "3 Löcher",
+    "description": "In 3 Wurf nix getroffen",
+    "type": "FRAME",
+    "type-parameters": {
+      "frame-size": 3,
+      "value": 1,
+      "greater-equal": false
+    }
+  }
+]
