@@ -3,6 +3,7 @@
     "name": "3er-Diplom",
     "description": "In 3 Wurf 26",
     "type": "FRAME",
+    "priority": 1,
     "type-parameters": {
       "frame-size": 3,
       "value": 26
@@ -12,6 +13,7 @@
     "name": "5er-Diplom",
     "description": "In 5 Wurf 40",
     "type": "FRAME",
+    "priority": 2,
     "type-parameters": {
       "frame-size": 5,
       "value": 40
@@ -21,6 +23,7 @@
     "name": "10er-Diplom",
     "description": "In 10 Wurf 70",
     "type": "FRAME",
+    "priority": 3,
     "type-parameters": {
       "frame-size": 10,
       "value": 70
@@ -30,6 +33,7 @@
     "name": "X-Fach-Hirte",
     "description": "Mindestens fünf Sieben hintereinander",
     "type": "FRAME-REPEAT-MIN",
+    "priority": -1,
     "type-parameters": {
       "frame-size": 5,
       "number": 7
@@ -39,6 +43,7 @@
     "name": "Kegelgott",
     "description": "7-2 kann jeder 2-7 nicht",
     "type": "FRAME-SEQUENCE-R",
+    "priority": -1,
     "type-parameters": {
       "frame-size": 2,
       "sequence": [
@@ -51,6 +56,7 @@
     "name": "10er in Räumer",
     "description": "45 Holz in 10 Wurf",
     "type": "FRAME-R",
+  "priority": 4,
     "type-parameters": {
       "frame-size": 10,
       "value": 45
@@ -60,6 +66,7 @@
     "name": "120 Wurf pure Konzentration",
     "description": "Kein Fehlwurf im Spiel",
     "type": "RESULT-EXACT",
+    "priority": 5,
     "type-parameters": {
       "count": 0,
       "counting": "0",

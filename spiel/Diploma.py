@@ -44,14 +44,15 @@ class DiplomaType(enum.IntEnum):
 
 class Diploma(ABC):
 
-    def __init__(self, diploma_type: DiplomaType, title: str):
+    def __init__(self, diploma_type: DiplomaType, title: str, priority: int = 0):
         self.type: DiplomaType = diploma_type
         self.title = title
+        self.priority = priority
 
     def __eq__(self, other) -> bool:
         if other is None or not isinstance(other, Diploma):
             return False
-        return self.title == other.title and self.type == other.type
+        return self.title == other.title and self.type == other.type and self.priority == other.priority
 
     def __hash__(self) -> int:
         return super().__hash__() + hash(self.title) + hash(self.type)
@@ -79,8 +80,8 @@ class DiplomaFrame(DiplomaSatz):
     ▶️ 9,9,9
     """
 
-    def __init__(self, diploma_type: DiplomaType, title: str, size: int, value: int):
-        super().__init__(diploma_type, title)
+    def __init__(self, diploma_type: DiplomaType, title: str, size: int, value: int, priority: int = 1):
+        super().__init__(diploma_type, title, priority=priority)
         self.size = size
         self.value = value
 
@@ -107,8 +108,8 @@ class DiplomaFrameSequenz(DiplomaSatz):
 class DiplomaFrameSequenzR(DiplomaSatz):
     """Diplom, das eine genaue Abfolge von Würfen benötigt. Dieses Diplom ist nur in Räumer gültig"""
 
-    def __init__(self, diploma_type: DiplomaType, title: str, size, sequenz, strict: bool):
-        super().__init__(diploma_type, title)
+    def __init__(self, diploma_type: DiplomaType, title: str, size, sequenz, strict: bool, priority: int = 1):
+        super().__init__(diploma_type, title, priority=priority)
         self.size = size
         self.sequenz = sequenz
         self.strict = strict
@@ -133,8 +134,8 @@ class DiplomaFrameR(DiplomaSatz):
 
     """
 
-    def __init__(self, diploma_type: DiplomaType, title: str, size: int, value: int):
-        super().__init__(diploma_type, title)
+    def __init__(self, diploma_type: DiplomaType, title: str, size: int, value: int, priority: int = 1):
+        super().__init__(diploma_type, title, priority=priority)
         self.size = size
         self.value = value
 
@@ -158,8 +159,8 @@ class DiplomaFrameRepeatMin(DiplomaSatz):
     ▶️ 7,7,7
     """
 
-    def __init__(self, diploma_type: DiplomaType, title: str, size: int, number: int):
-        super().__init__(diploma_type, title)
+    def __init__(self, diploma_type: DiplomaType, title: str, size: int, number: int, priority: int = 1):
+        super().__init__(diploma_type, title, priority=priority)
         self.size = size
         self.number = number
 
@@ -206,8 +207,8 @@ class DiplomaResultExact(DiplomaSpiel):
     Es darf keinen Fehlwurf geben.
     """
 
-    def __init__(self, diploma_type: DiplomaType, title: str, count: int, counting: str, field: str):
-        super().__init__(diploma_type, title)
+    def __init__(self, diploma_type: DiplomaType, title: str, count: int, counting: str, field: str, priority: int = 1):
+        super().__init__(diploma_type, title, priority=priority)
         self.count = count
         self.counting = counting
         self.field = field

@@ -10,11 +10,12 @@ import PySimpleGUI as gui
 import csv_parse
 from logic import parse_diploma, eval_spiel_print_in_window, eval_spiel_from_input, eval_spiel_einzel
 from spiel import Spiel120
+from spiel.Diploma import Diploma
 from spiel.DiplomaBig import DiplomaBig
 
 with pathlib.Path("settings.json").open() as settings_file:
     settings = json.loads(settings_file.read())
-DIPLOMAS = set()
+DIPLOMAS = list()
 
 
 def create_spiel_frame() -> List[List]:
@@ -45,7 +46,7 @@ def create_new_window() -> gui.Window:
                       '---', 'Command &3', 'Command &4']],
         ['&Help', ['&About...']]
     ]
-    [gui.Menubar(menu_def)]
+    # [gui.Menubar(menu_def)]
     meta_layout = [[gui.Text("Spieler Name: "), gui.Input("", key="spieler-name")]]
     spiel_frame = create_spiel_frame()
     layout = [[gui.Column([[gui.Frame("Infos", layout=meta_layout, key="frame-meta")],
@@ -76,15 +77,16 @@ def run_new_window(window: gui.Window):
             return
 
 
-def load_diplomas(diplomas_set: set):
+def load_diplomas(diplomas_set: list) -> list[Diploma]:
     diploma_path = pathlib.Path("diplomas.json")
     with diploma_path.open("r", encoding="utf-8-sig") as diploma_file:
         diploma_json = json.loads(diploma_file.read())
     for diploma in diploma_json:
         try:
-            diplomas_set.add(parse_diploma(diploma))
+            diplomas_set.append(parse_diploma(diploma))
         except TypeError:
             pass
+    return sorted(diplomas_set, key=lambda x: x.priority, reverse=True)
 
 
 def create_start_window() -> gui.Window:
@@ -255,7 +257,7 @@ def run_complete_window(window: gui.Window):
 
 def run_start(window: gui.Window):
     global DIPLOMAS
-    load_diplomas(DIPLOMAS)
+    DIPLOMAS = load_diplomas(DIPLOMAS)
     while True:
         event, values = window.read()
         command: callable

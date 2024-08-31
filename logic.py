@@ -3,17 +3,17 @@
 import PySimpleGUI as gui
 
 from spiel import DiplomaType, Spiel120, DiplomaAnswers
-from spiel.Diploma import DiplomaFrame, DiplomaFrameRepeatMin, DiplomaFrameR, Diploma, DiplomaSpiel, DiplomaResultExact, \
-    DiplomaFrameSequenzR
+from spiel.Diploma import (DiplomaFrame, DiplomaFrameRepeatMin, DiplomaFrameR, Diploma, DiplomaSpiel,
+                           DiplomaResultExact, DiplomaFrameSequenzR)
 
 
-def eval_spiel_einzel(spiel: Spiel120, diplomas: set, name: str = "") -> DiplomaAnswers:
+def eval_spiel_einzel(spiel: Spiel120, diplomas: list[Diploma], name: str = "") -> DiplomaAnswers:
     """
     Evaluate a Spiel120 and diplomas and return the results.
     :param spiel: Spiel zum auswerten
     :type spiel: Spiel120
     :param diplomas: Diplome zum auswerten
-    :type diplomas: set
+    :type diplomas: list[Diploma]
     :param name: Name des Spielers
     :type name:  str
     :return: Ergebnisse in einer DiplomaAnswers
@@ -31,19 +31,19 @@ def eval_spiel_einzel(spiel: Spiel120, diplomas: set, name: str = "") -> Diploma
     return result
 
 
-def eval_spiel_print_in_window(spiel: Spiel120, window: gui.Window, diplomas: set, name: str = ""):
+def eval_spiel_print_in_window(spiel: Spiel120, window: gui.Window, diplomas: list[Diploma], name: str = ""):
     """
     Evaluate a Spiel120 and diplomas and print the results to the window.
     :param spiel: Spiel zum auswerten
-    :type spiel:
+    :type spiel: Spiel120
     :param window: Fenster zum Ausgeben
     :type window:
     :param diplomas: Diplome zum auswerten
-    :type diplomas:
+    :type diplomas: list[Diploma]
     :param name: Name des Spielers
-    :type name:
-    :return:
-    :rtype:
+    :type name: str
+    :return: None
+    :rtype: None
     """
     result = eval_spiel_einzel(spiel, diplomas, name)
     result.print()
@@ -94,16 +94,18 @@ def parse_diploma(diploma: dict) -> Diploma:
     dtype = DiplomaType.value_of(diploma["type"])
     params: dict = diploma["type-parameters"]
     title: str = diploma["name"]
+    priority: int = int(diploma["priority"]) if "priority" in diploma else 0
     match dtype:
         case DiplomaType.FRAME:
-            return DiplomaFrame(dtype, title, int(params["frame-size"]), int(params["value"]))
+            return DiplomaFrame(dtype, title, int(params["frame-size"]), int(params["value"]), priority)
         case DiplomaType.FRAME_REPEAT_MIN:
-            return DiplomaFrameRepeatMin(dtype, title, int(params["frame-size"]), int(params["number"]))
+            return DiplomaFrameRepeatMin(dtype, title, int(params["frame-size"]), int(params["number"]), priority)
         case DiplomaType.FRAME_R:
-            return DiplomaFrameR(dtype, title, int(params["frame-size"]), int(params["value"]))
+            return DiplomaFrameR(dtype, title, int(params["frame-size"]), int(params["value"]), priority)
         case DiplomaType.RESULT_EXACT:
-            return DiplomaResultExact(dtype, title, params["count"], params["counting"], params["field"])
+            return DiplomaResultExact(dtype, title, params["count"], params["counting"], params["field"], priority)
         case DiplomaType.FRAME_SEQUENCE_R:
-            return DiplomaFrameSequenzR(dtype, title, int(params["frame-size"]), params["sequence"], params["strict"])
+            return DiplomaFrameSequenzR(dtype, title, int(params["frame-size"]), params["sequence"], params["strict"],
+                                        priority)
         case _:
             raise TypeError()
