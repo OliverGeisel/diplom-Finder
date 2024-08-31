@@ -6,6 +6,7 @@ class Satz:
         self.number = number
         self.volle: List[int] = [None] * 15
         self.abräumer: List[int] = [None] * 15
+        self.blocked: List[bool] = [False] * 30
 
     def get(self, number: int) -> int:
         """
@@ -25,3 +26,17 @@ class Satz:
 
     def get_all(self) -> List[int]:
         return self.volle + self.abräumer
+
+    def block(self, start, end):
+        """
+        Blockiert einen Bereich von Würfen.
+        Example: s.block(0, 3) blockiert die ersten 3 Würfe
+
+        :param start:  Startindex
+        :type start: int
+        :param end:  Endindex (exklusiv)
+        :type end:  int
+        :return:  None
+        :rtype:  None
+        """
+        self.blocked[start:end] = [True] * (end - start)

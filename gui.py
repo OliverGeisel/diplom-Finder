@@ -184,13 +184,14 @@ def create_complete_window() -> gui.Window:
                 tooltip="Hier ist der Name der Mannschaft zum Auswerten. Der angegebene String wird geprüft, ob er in der Mannschaft enthaltene ist.",
                 key="team-pattern")],
         [gui.FolderBrowse("Ordner", key="folder", initial_folder=settings["start_path"])],
+        [gui.Text("Minimale Priorität:"), gui.Input("1", key="prio_level",
+                                                    tooltip="Hier wird die minimale Priorität der Diplome angegeben. Alle Diplome mit einer Priorität kleiner dieser Zahl werden ignoriert. Bei 1 wird im Normalfall alle 'normalen' Diplome ausgewertet.")],
         [gui.Button("Auswerten", key="AUSWERTEN")]
     ]
     return gui.Window("Komplettauswertung", layout=layout)
-    pass
 
 
-def auswerten_all(pattern: str, folder: pathlib.Path):
+def auswerten_all(pattern: str, folder: pathlib.Path, prio_level: int):
     date_format = "%d.%m.%Y"
     diplome_pro_spieler: dict[str, list[DiplomaBig]] = dict()
     pattern_clean = pattern.upper().strip()
@@ -225,7 +226,7 @@ def auswerten_all(pattern: str, folder: pathlib.Path):
                     if not spiel.is_valid():
                         continue
                     spieler = player.name
-                    diplome = eval_spiel_einzel(spiel, DIPLOMAS, spieler)
+                    diplome = eval_spiel_einzel(spiel, DIPLOMAS, spieler, prio_level)
                     if diplome.is_leer():
                         continue
                     if spieler not in diplome_pro_spieler.keys():
@@ -250,7 +251,7 @@ def run_complete_window(window: gui.Window):
         event, values = window.read()
         if event == "AUSWERTEN":
             pattern: str = values["team-pattern"]
-            auswerten_all(pattern, values["folder"])
+            auswerten_all(pattern, values["folder"], int(values["prio_level"]))
         else:
             return
 

@@ -42,6 +42,21 @@ class DiplomaType(enum.IntEnum):
                 return None
 
 
+def _is_block_free(satz: Satz, start: int, end: int) -> bool:
+    """
+    Check if a block is free in a Satz
+    :param satz: Satz to check
+    :type satz:  Satz
+    :param start:  Startindex
+    :type start:  int
+    :param end: Endindex (exklusiv)
+    :type end:  int
+    :return:  True if block is free
+    :rtype:  bool
+    """
+    return satz.blocked[start:end].count(True) == 0
+
+
 class Diploma(ABC):
 
     def __init__(self, diploma_type: DiplomaType, title: str, priority: int = 0):
@@ -89,11 +104,16 @@ class DiplomaFrame(DiplomaSatz):
         würfe = satz.volle + satz.abräumer
         back = DiplomaAnswers()
         for i in range(len(würfe) - self.size):
-            folge = würfe[i:i + self.size]
+            start = i
+            end = i + self.size
+            if not _is_block_free(satz, start, end):
+                continue
+            folge = würfe[start:end]
             if sum(folge) >= self.value:
-                absolut_wurf = i + 1
+                absolut_wurf = start + 1
                 bereich = VOLLE if absolut_wurf <= 15 else RÄUMER
                 back.add(DiplomaAnswer(satz.number, absolut_wurf, bereich, self.title, folge))
+                satz.block(start, end)
         return back
 
 
@@ -118,12 +138,17 @@ class DiplomaFrameSequenzR(DiplomaSatz):
         würfe = element.abräumer
         back = DiplomaAnswers()
         for i in range(0, len(würfe) - self.size):
+            start = i
+            end = i + self.size
+            if not _is_block_free(element, start + 15, end + 15):
+                continue
             folge_davor = würfe[0:max(i - 1, 1)]
-            if ((self.strict and (sum(folge_davor) % 9) == 0 and würfe[i:i + self.size] == self.sequenz)
-                    or (not self.strict and würfe[i:i + self.size] == self.sequenz)):
+            if ((self.strict and (sum(folge_davor) % 9) == 0 and würfe[start:end] == self.sequenz)
+                    or (not self.strict and würfe[start:end] == self.sequenz)):
                 absolut_wurf = 16 + i
                 bereich = RÄUMER
                 back.add(DiplomaAnswer(element.number, absolut_wurf, bereich, self.title, self.sequenz))
+                element.block(start + 15, end + 15)
         return back
 
 
@@ -139,15 +164,20 @@ class DiplomaFrameR(DiplomaSatz):
         self.size = size
         self.value = value
 
-    def check(self, element: Satz) -> DiplomaAnswers:
-        würfe = element.abräumer
+    def check(self, satz: Satz) -> DiplomaAnswers:
+        würfe = satz.abräumer
         back = DiplomaAnswers()
         for i in range(len(würfe) - self.size):
-            folge = würfe[i:i + self.size]
+            start = i
+            end = i + self.size
+            if not _is_block_free(satz, start + 15, end + 15):
+                continue
+            folge = würfe[start:end]
             if sum(folge) >= self.value:
-                absolut_wurf = i + 1
+                absolut_wurf = start + 16
                 bereich = RÄUMER
-                back.add(DiplomaAnswer(element.number, absolut_wurf, bereich, self.title, folge))
+                back.add(DiplomaAnswer(satz.number, absolut_wurf, bereich, self.title, folge))
+                satz.block(start + 15, end + 15)
         return back
 
 

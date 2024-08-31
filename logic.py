@@ -7,9 +7,12 @@ from spiel.Diploma import (DiplomaFrame, DiplomaFrameRepeatMin, DiplomaFrameR, D
                            DiplomaResultExact, DiplomaFrameSequenzR)
 
 
-def eval_spiel_einzel(spiel: Spiel120, diplomas: list[Diploma], name: str = "") -> DiplomaAnswers:
+def eval_spiel_einzel(spiel: Spiel120, diplomas: list[Diploma], name: str = "",
+                      priority_level: int = 1) -> DiplomaAnswers:
     """
     Evaluate a Spiel120 and diplomas and return the results.
+    :param priority_level: minimum priority level of diplomas to check (default 1)
+    :type priority_level:  int
     :param spiel: Spiel zum auswerten
     :type spiel: Spiel120
     :param diplomas: Diplome zum auswerten
@@ -21,6 +24,8 @@ def eval_spiel_einzel(spiel: Spiel120, diplomas: list[Diploma], name: str = "") 
     """
     result = DiplomaAnswers(name)
     for diploma in diplomas:
+        if diploma.priority < priority_level:
+            continue
         if isinstance(diploma, DiplomaSpiel):  # check if diploma is a Spiel diploma
             result_temp = diploma.check(spiel)
             result += result_temp
