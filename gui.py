@@ -8,6 +8,7 @@ from typing import List
 import PySimpleGUI as gui
 
 import csv_parse
+from ini_file import IniFile
 from logic import parse_diploma, eval_spiel_print_in_window, eval_spiel_from_input, eval_spiel_einzel
 from spiel import Spiel120
 from spiel.DiplomaBig import DiplomaBig
@@ -185,7 +186,62 @@ def create_complete_window() -> gui.Window:
         [gui.Button("Auswerten", key="AUSWERTEN")]
     ]
     return gui.Window("Komplettauswertung", layout=layout)
-    pass
+
+
+def check_player_verein(team: pathlib.Path) -> dict[str, str]:
+    back = dict()
+    if not team.is_dir() or team.name == "Backup-Daten":
+        return back
+    team_name = team.stem
+    ini_file_path = team.joinpath(f"../{team_name}.ini")
+    if not ini_file_path.exists():
+        return back
+    ini_file = IniFile(ini_file_path)
+    ini_file.read()
+    for region_key in ini_file:
+        region = ini_file[region_key]
+        if "Spieler" in region.name:
+            verein = region["Verein"]
+            vorname = region["Vorname"]
+            name = region["Name"]
+            back[f"{name},{vorname}"] = verein
+    return back
+
+
+def eval_player_dir(player: pathlib.Path, team_name: str, date: datetime.date, diploma_map: dict) -> None:
+    if not player.is_dir():
+        return
+    game_file_path: pathlib.Path = player.joinpath("werte.csv")
+    if not game_file_path.exists():
+        print(f"Die Datei {game_file_path} existiert nicht!")
+        return
+    spiel = csv_parse.parse_csv(game_file_path)
+    if not spiel.is_valid():
+        return
+    spieler = player.name
+    diplome = eval_spiel_einzel(spiel, DIPLOMAS, spieler)
+    if diplome.is_leer():
+        return
+    if spieler not in diploma_map.keys():
+        diploma_map[spieler] = list()
+    diploma_map[spieler].append(DiplomaBig(date, team_name, diplome))
+
+
+def eval_team(team: pathlib.Path, pattern: str, date: datetime.date, diploma_map: dict) -> None:
+    if not team.is_dir() or team.name == "Backup-Daten":
+        return
+    if pattern in team.name.upper():  # the team matches the pattern
+        for player in team.iterdir():
+            eval_player_dir(player, team.name, date, diploma_map)
+    else:  # check if one player in the team is in the verein
+        verein_map = check_player_verein(team)
+        if len(verein_map) == 0:
+            return
+        for player in verein_map.keys():
+            verein = verein_map[player]
+            if pattern in verein.upper():
+                player_dir = team.joinpath(player)
+                eval_player_dir(player_dir, verein, date, diploma_map)
 
 
 def auswerten_all(pattern: str, folder: pathlib.Path):
@@ -209,26 +265,8 @@ def auswerten_all(pattern: str, folder: pathlib.Path):
         for game in date.iterdir():  # check each game at the date
             if not game.is_dir():
                 continue
-            for team in game.iterdir():
-                if not team.is_dir() or team.name == "Backup-Daten" or pattern_clean not in team.name.upper():
-                    continue
-                for player in team.iterdir():
-                    if not player.is_dir():
-                        continue
-                    game_file_path: pathlib.Path = player.joinpath("werte.csv")
-                    if not game_file_path.exists():
-                        print(f"Die Datei {game_file_path} existiert nicht!")
-                        continue
-                    spiel = csv_parse.parse_csv(game_file_path)
-                    if not spiel.is_valid():
-                        continue
-                    spieler = player.name
-                    diplome = eval_spiel_einzel(spiel, DIPLOMAS, spieler)
-                    if diplome.is_leer():
-                        continue
-                    if spieler not in diplome_pro_spieler.keys():
-                        diplome_pro_spieler[spieler] = list()
-                    diplome_pro_spieler[spieler].append(DiplomaBig(parsed_date, team.name, diplome))
+            for team in game.iterdir():  # check each team in the game
+                eval_team(team, pattern_clean, parsed_date, diplome_pro_spieler)
     csv_parse.export_to_csv(diplome_pro_spieler, "komplett")
     gui.popup_ok("Die Auswertung ist abgeschlossen!", title="Auswertung abgeschlossen!")
     order = dict()
